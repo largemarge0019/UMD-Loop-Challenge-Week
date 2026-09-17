@@ -1,0 +1,69 @@
+# Member-facing compose file. Uses the PREBUILT images; it does not build from
+# this repository.
+#
+# TWO containers, on purpose:
+#   sim — the simulator. It runs as the non-login user 'simsvc' and you never
+#         need a shell in it.
+#   dev — your container. Same ROS 2, same OpenCV, the same autotype_sim /
+#         autotype_msgs build, your workspace at /ws. This is where you work.
+#
+#   docker load -i urc-autotype-<arch>.tar.gz     # arch from `uname -m`; see docs/INFO.md
+#   mkdir -p member_ws/src
+#   docker compose up -d                # starts the simulator + dashboard + dev
+#   open http://localhost:8080
+#   docker compose exec dev bash        # your shell, for your own nodes
+#
+# Change the seed / launch key per attempt:
+#   AUTOTYPE_SEED=7 AUTOTYPE_LAUNCH_KEY=MARS docker compose up
+#
+# To run a SECOND, isolated stack alongside the first (e.g. two seeds at once,
+# or so one person's experiments do not disturb another's), give it its own
+# compose project, container-name suffix and host port:
+#   AUTOTYPE_PORT=8091 AUTOTYPE_SUFFIX=-b docker compose -p urcb up -d
+#   # dashboard on :8091; shell with:  docker compose -p urcb exec dev bash
+#
+# Development-only launch flags (never in a submitted attempt, see docs/INTERFACES.md s.1.5):
+#   AUTOTYPE_EXTRA_ARGS="teleop:=true debug_press_feedback:=true" docker compose up
+#
+# Why the two containers still behave like one host for ROS 2:
+#   network_mode / ipc "service:sim" put dev into the sim's network AND IPC
+#   namespaces, so they share localhost and /dev/shm. Fast DDS discovery and its
+#   shared-memory transport (FASTDDS_BUILTIN_TRANSPORTS=SHM, baked into the
+#   image) work exactly as they did when everything lived in one container —
+#   `ros2 topic list` in dev shows the simulator's topics, at full camera rate.
+#   'ipc: shareable' on sim is what allows dev to join that namespace.
+services:
+  sim:
+    image: urc-autotype:sim
+    init: true          # reap PID 1 so `compose down` is instant, not a 10 s SIGKILL wait
+    container_name: urc-autotype-sim${AUTOTYPE_SUFFIX:-}
+    ipc: shareable
+    ports:
+      - "${AUTOTYPE_PORT:-8080}:8080"
+    environment:
+      AUTOTYPE_SEED: ${AUTOTYPE_SEED:-1}
+      AUTOTYPE_LAUNCH_KEY: ${AUTOTYPE_LAUNCH_KEY:-ROVER}
+    command: >
+      ros2 launch autotype_sim challenge.launch.py
+      seed:=${AUTOTYPE_SEED:-1}
+      launch_key:=${AUTOTYPE_LAUNCH_KEY:-ROVER}
+      ${AUTOTYPE_EXTRA_ARGS:-}
+    stdin_open: true
+    tty: true
+
+  dev:
+    image: urc-autotype:dev
+    init: true
+    container_name: urc-autotype-dev${AUTOTYPE_SUFFIX:-}
+    depends_on:
+      - sim
+    # Same network and IPC namespace as sim; no ports of its own (they belong to
+    # sim, which publishes 8080).
+    network_mode: "service:sim"
+    ipc: "service:sim"
+    volumes:
+      - ./member_ws:/ws
+    # Idles as uid 1000 ('member'); you get in with `docker compose exec dev bash`.
+    command: ["sleep", "infinity"]
+    stdin_open: true
+    tty: true

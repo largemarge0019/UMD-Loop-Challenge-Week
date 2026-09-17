@@ -1,0 +1,21 @@
+# Release tarballs are downloaded into the clone (see README); they are not
+# repository content, and GitHub rejects files over 100 MB in git.
+*.tar.gz
+*.sha256
+dist/
+
+# ROS 2 / colcon build output
+build/
+install/
+log/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Workspace created by the quick start and bind-mounted into the dev container
+member_ws/
+
+.DS_Store

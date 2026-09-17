@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>autotype sim — dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div id="banner" class="banner" hidden>DISCONNECTED — reconnecting…</div>
+
+<header class="topbar">
+  <div class="brand">AUTOTYPE SIM <span class="sub">live monitor</span></div>
+  <div class="hud">
+    <span class="hud-item">seed <b id="hud-seed">—</b></span>
+    <span class="hud-item">sim t <b id="hud-t">—</b></span>
+    <span id="status-pill" class="pill idle">idle</span>
+    <span id="conn" class="conn connecting">connecting</span>
+  </div>
+</header>
+
+<main class="grid">
+
+  <section class="card area-panel">
+    <div class="card-title">Top-down panel
+      <span class="hint"><i class="sw ok"></i>reachable from current pose <i class="sw bad"></i>unreachable <i class="sw dot"></i>stylus ∩ panel</span>
+    </div>
+    <div class="canvas-wrap panel-wrap" id="panel-wrap">
+      <canvas id="panel"></canvas>
+      <div id="tooltip" class="tooltip" hidden></div>
+    </div>
+  </section>
+
+  <section class="card area-camera">
+    <div class="card-title">Camera <span class="mono dim">/camera/image_raw</span>
+      <span class="hint"><span id="fps" class="mono">0.0 fps</span></span>
+    </div>
+    <div class="canvas-wrap cam-wrap" id="camera-wrap">
+      <canvas id="camera"></canvas>
+      <div id="noimg" class="placeholder">no image</div>
+    </div>
+  </section>
+
+  <section class="card area-typed">
+    <div class="card-title">Typed <span class="dim">(operator view — not on any topic)</span>
+      <span class="hint">target <b id="target-text" class="mono">—</b></span>
+    </div>
+    <div class="typed-row">
+      <div id="typed" class="typed"></div>
+    </div>
+  </section>
+
+  <section class="card area-arm">
+    <div class="card-title">Arm
+      <span class="hint"><span id="stylus-info" class="mono">stylus: —</span></span>
+    </div>
+    <div class="arm-views">
+      <div class="arm-view"><canvas id="arm-side"></canvas><span class="corner-label">side (r–z, yaw plane)</span></div>
+      <div class="arm-view"><canvas id="arm-top"></canvas><span class="corner-label">top (x–y)</span></div>
+    </div>
+    <div id="joints" class="joints"></div>
+    <div class="status-row">
+      <span>cmd age <b id="cmd-age" class="mono">—</b></span>
+      <span class="led-wrap"><i id="wd-led" class="led"></i>watchdog</span>
+      <span>sim t <b id="sim-t" class="mono">—</b> s</span>
+    </div>
+  </section>
+
+  <section class="card area-log">
+    <div class="card-title">Events
+      <span class="hint"><i class="sw ok"></i>accepted <i class="sw warn"></i>geometry <i class="sw info"></i>dynamics</span>
+    </div>
+    <div id="log" class="log"></div>
+  </section>
+
+</main>
+
+<div id="teleop" class="teleop" hidden>
+  <div class="teleop-head">
+    <b>TELEOP</b>
+    <label class="speed">speed <input id="speed" type="range" min="1" max="30" step="1" value="10"> <span id="speed-val" class="mono">10</span> °/s</label>
+    <span class="keys-help mono">Q/A base · W/S shoulder · E/D elbow · ←/→ pan · ↑/↓ tilt · SPACE press · ENTER done · R reset</span>
+  </div>
+  <div class="teleop-body">
+    <div id="jog" class="jog"></div>
+    <div class="teleop-actions">
+      <button id="btn-stop" class="btn stop">STOP</button>
+      <button id="btn-press" class="btn press">PRESS</button>
+      <button id="btn-done" class="btn done">DONE</button>
+      <span class="reset-group">
+        <input id="seed-in" class="seed-in" type="number" min="0" placeholder="seed">
+        <button id="btn-reset" class="btn reset">RESET</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<div id="result" class="overlay" hidden>
+  <div class="result-panel">
+    <div class="result-head">
+      <span>RESULT</span>
+      <button id="result-close" class="close" title="dismiss">✕</button>
+    </div>
+    <div id="result-verdict" class="verdict"></div>
+    <div class="result-strings">
+      <div class="rs-row"><span class="rs-label">target</span><div id="result-target" class="rs-chars"></div></div>
+      <div class="rs-row"><span class="rs-label">typed</span><div id="result-typed" class="rs-chars"></div></div>
+    </div>
+    <div class="result-stats">
+      <div class="stat"><span class="stat-label">presses attempted</span><b id="result-attempted">—</b></div>
+      <div class="stat"><span class="stat-label">accepted</span><b id="result-accepted">—</b></div>
+      <div class="stat"><span class="stat-label">elapsed</span><b id="result-elapsed">—</b></div>
+      <div class="stat"><span class="stat-label">edit distance</span><b id="result-ed">—</b></div>
+    </div>
+    <table class="rejections">
+      <thead><tr><th>rejection</th><th>count</th></tr></thead>
+      <tbody id="result-rej"></tbody>
+    </table>
+    <div class="result-foot dim">re-appears when a new result arrives · Esc to dismiss</div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

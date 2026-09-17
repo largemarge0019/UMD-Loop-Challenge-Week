@@ -1,0 +1,8 @@
+# Build context: only the paths the Dockerfile copies, plus nothing else.
+*
+!docker/entrypoint.sh
+!src/
+!private/
+src/autotype_sim/test/
+**/__pycache__/
+**/.pytest_cache/
